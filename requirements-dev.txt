@@ -1,0 +1,5 @@
+# Dev / test-only dependencies.
+#   pip install -r requirements-dev.txt
+# (Also needs the runtime deps from requirements.txt, plus ffmpeg on PATH for the
+#  GIF-conversion tests — those skip themselves if ffmpeg is missing.)
+pytest>=8.0

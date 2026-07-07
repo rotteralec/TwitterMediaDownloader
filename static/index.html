@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>X / Twitter Video & GIF Downloader</title>
+  <meta name="description" content="Paste a tweet, get the video as MP4 or the GIF as a real .gif. Free, no signup, mobile and desktop." />
+  <meta name="theme-color" content="#0f1419" />
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <main class="wrap">
+    <header class="hero">
+      <h1>X Video &amp; GIF Downloader</h1>
+      <p class="sub">Paste a tweet URL. Get the video as MP4, or the GIF as a real .gif.</p>
+    </header>
+
+    <section class="card" aria-labelledby="form-label">
+      <label id="form-label" class="sr-only" for="url-input">Tweet URL</label>
+      <form id="form" autocomplete="off" novalidate>
+        <div class="input-row">
+          <div class="input-wrap">
+            <input
+              id="url-input"
+              type="url"
+              inputmode="url"
+              placeholder="https://x.com/username/status/123…"
+              spellcheck="false"
+              autocapitalize="off"
+              required
+            />
+            <button id="clear-btn" type="button" class="clear" aria-label="Clear input" hidden>&times;</button>
+          </div>
+          <button id="paste-btn" type="button" class="ghost" title="Paste from clipboard">Paste</button>
+        </div>
+        <button id="submit-btn" type="submit" class="primary">
+          <span class="btn-label">Download</span>
+          <span class="spinner" aria-hidden="true"></span>
+        </button>
+      </form>
+
+      <p id="quota" class="quota" hidden></p>
+      <div id="error" class="error" role="alert" hidden></div>
+    </section>
+
+    <section id="results" class="results" hidden aria-live="polite"></section>
+
+    <footer class="foot">
+      <p>
+        Public tweets only. Videos stream straight from X's CDN; GIFs are
+        converted on the fly and never stored.
+      </p>
+      <p>
+        <a id="gh-link" href="#" target="_blank" rel="noopener">Source on GitHub</a>
+        · Self-host for unlimited use.
+      </p>
+    </footer>
+  </main>
+
+  <template id="result-tpl">
+    <article class="result">
+      <div class="thumb">
+        <img alt="" loading="lazy" />
+      </div>
+      <div class="meta">
+        <h2 class="title"></h2>
+        <p class="uploader"></p>
+        <div class="qualities"></div>
+      </div>
+    </article>
+  </template>
+
+  <script src="/static/app.js" defer></script>
+</body>
+</html>
