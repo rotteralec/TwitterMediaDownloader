@@ -13,6 +13,7 @@ import shutil
 import tempfile
 from pathlib import Path
 from typing import Optional
+from urllib.parse import urlparse
 
 import httpx
 from fastapi import Cookie, FastAPI, Query, Request, Response
@@ -256,6 +257,15 @@ async def _download_as_gif(url: str, filename: Optional[str]):
     return StreamingResponse(streamer(), media_type="image/gif", headers=headers)
 
 
+def _is_allowed_cdn(url: str) -> bool:
+    """True only for https URLs whose host is twimg.com or a *.twimg.subdomain.
+        Uses parsed hostname (not a substring) so look-alikes such as faketwimg.com are rejected.
+    """
+
+    parsed = urlparse(url)
+    host = (parsed.hostname or "").lower()
+    return parsed.scheme == "https" and (host == "twimg.com" or host.endswith(".twimg.com"))
+
 @app.get("/api/download")
 async def api_download(
     url: str = Query(...),
@@ -269,7 +279,7 @@ async def api_download(
 
     We only allow URLs from Twitter's video CDN to avoid being a generic open proxy.
     """
-    if not re.match(r"^https://[a-z0-9.-]*twimg\.com/", url):
+    if not _is_allowed_cdn(url):
         return JSONResponse(
             status_code=400,
             content={"error": "bad_url", "message": "Only twimg.com URLs are allowed."},
