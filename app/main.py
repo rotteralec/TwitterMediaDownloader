@@ -67,11 +67,28 @@ ROOT = Path(__file__).resolve().parent.parent
 STATIC_DIR = ROOT / "static"
 
 
+def _strip_port(host: str) -> str:
+    """Return just the IP from an X-Forwarded-For element that may carry a port.
+    Handles 'a.b.c.d:port', bracketed IPv6 '[::1]:port', and bare IPs."""
+    host = host.strip()
+    if host.startswith("["):              # [IPv6]:port
+        end = host.find("]")
+        return host[1:end] if end != -1 else host
+    if host.count(":") == 1:              # IPv4:port
+        return host.rsplit(":", 1)[0]
+    return host                            # bare IPv4 or bare/unbracketed IPv6
+
+
 def _client_ip(req: Request) -> str:
-    # Honor X-Forwarded-For if present (deploys behind a proxy).
+    # Behind Azure App Service's front end (one trusted hop), the real client IP is
+    # the RIGHTMOST X-Forwarded-For value: the front end appends it after anything
+    # the caller sent, so values to its left are attacker-controlled. Never take the
+    # leftmost. If XFF is absent (local dev), fall back to the socket peer.
     fwd = req.headers.get("x-forwarded-for")
     if fwd:
-        return fwd.split(",")[0].strip()
+        ip = _strip_port(fwd.split(",")[-1])
+        if ip:
+            return ip
     return req.client.host if req.client else "unknown"
 
 

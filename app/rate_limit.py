@@ -13,8 +13,11 @@ from datetime import datetime, timezone
 
 
 class RateLimiter:
-    def __init__(self, daily_limit: int):
+    def __init__(self, daily_limit: int, max_entries: int = 20000):
         self.daily_limit = daily_limit
+        # Hard ceiling on tracked IPs so a flood of distinct keys can't grow the
+        # dict without bound (memory-exhaustion DoS). See check().
+        self.max_entries = max_entries
         self._counts: dict[str, tuple[str, int]] = {}
         self._lock = threading.Lock()
 
@@ -30,6 +33,19 @@ class RateLimiter:
                 count = 0
             if count >= self.daily_limit:
                 return False, 0
+
+            # Memory bound: only do work once the table is actually large.
+            if ip not in self._counts and len(self._counts) >= self.max_entries:
+                # 1) cheap win: drop entries left over from previous days.
+                stale = [k for k, (d, _) in self._counts.items() if d != today]
+                for k in stale:
+                    del self._counts[k]
+                # 2) still full of today's entries -> fail OPEN (allow, don't
+                #    track). Deliberate: neither grow unbounded nor let a flood
+                #    lock out real users by filling the table.
+                if len(self._counts) >= self.max_entries:
+                    return True, max(0, self.daily_limit - 1)
+
             count += 1
             self._counts[ip] = (today, count)
             return True, max(0, self.daily_limit - count)
