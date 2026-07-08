@@ -14,6 +14,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY app/ ./app/
 COPY static/ ./static/
 
+#Run as an unprivileged user instead of root
+RUN useradd --create-home --uid 10001 appuser \
+ && chown -R appuser:appuser /app
+USER appuser
+
 ENV PORT=8000 \
     DAILY_LIMIT=3 \
     PYTHONUNBUFFERED=1
