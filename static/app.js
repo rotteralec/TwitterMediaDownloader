@@ -34,9 +34,13 @@
     }
     quotaEl.hidden = false;
     if (status.remaining <= 0) {
-      quotaEl.innerHTML =
-        `Daily demo limit reached (${status.daily_limit}/day). ` +
-        `<a href="${status.github_url}" target="_blank" rel="noopener">Host your own</a> for unlimited use.`;
+      quotaEl.textContent = `Daily demo limit reached (${status.daily_limit}/day). `;
+      const a = document.createElement("a");
+      a.href = status.github_url || "#";
+      a.target = "_blank";
+      a.rel = "noopener";
+      a.textContent = "Host your own";
+      quotaEl.append(a, " for unlimited use.");
     } else {
       quotaEl.innerHTML =
         `<strong>${status.remaining}</strong> of ${status.daily_limit} free downloads left today.`;
