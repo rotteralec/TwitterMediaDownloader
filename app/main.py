@@ -61,6 +61,15 @@ _OWNER_TOKEN = secrets.token_urlsafe(32) if OWNER_KEY else ""
 # --- App --------------------------------------------------------------------
 
 app = FastAPI(title="Twitter Video Downloader", docs_url=None, redoc_url=None)
+
+@app.middleware("http")
+async def _security_headers(request: Request, call_next):
+    resp = await call_next(request)
+    resp.headers["X-Content-Type-Options"] = "nosniff"
+    resp.headers["X-Frame-Options"] = "DENY"
+    resp.headers["Referrer-Policy"] = "no-referrer"
+    return resp
+
 limiter = RateLimiter(DAILY_LIMIT)
 
 ROOT = Path(__file__).resolve().parent.parent
