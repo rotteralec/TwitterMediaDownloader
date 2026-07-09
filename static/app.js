@@ -153,7 +153,7 @@ async function shareMedia(downloadUrl, filename, mimeType, btn) {
   function setLoading(on) {
     submitBtn.disabled = on;
     submitBtn.classList.toggle("is-loading", on);
-    submitBtn.querySelector(".btn-label").textContent = on ? "Working" : "Download";
+    submitBtn.querySelector(".btn-label").textContent = on ? "Working" : "Convert";
   }
 
   function setError(msg, githubUrl) {
