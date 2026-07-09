@@ -50,7 +50,7 @@
   function canShareFiles() {
     if (!navigator.canShare) return false;
     try {
-      return navigator.canShare({ files: [new File(["x"], "probe.gif", { type: "image/"})]})
+      return navigator.canShare({ files: [new File(["x"], "probe.gif", { type: "image/gif"})]});
     } catch { return false; }
   }
   const CAN_SHARE = canShareFiles();
