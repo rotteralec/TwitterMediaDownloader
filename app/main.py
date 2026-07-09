@@ -219,7 +219,7 @@ async def _download_as_gif(url: str, filename: Optional[str]):
     too_large = f"That clip is too large to convert to GIF (over {GIF_MAX_SOURCE_MB} MB)."
 
     # 1) Pull the source MP4 to a temp file, enforcing a size cap as we go.
-    client = httpx.AsyncClient(follow_redirects=True, timeout=60.0)
+    client = httpx.AsyncClient(follow_redirects=False, timeout=60.0)
     try:
         async with client.stream("GET", url) as upstream:
             if upstream.status_code >= 400:
@@ -308,7 +308,7 @@ async def api_download(
     out_name = _safe_filename(filename or "twitter_video", ext="mp4")
 
     # Stream chunked so large files don't blow up memory.
-    client = httpx.AsyncClient(follow_redirects=True, timeout=60.0)
+    client = httpx.AsyncClient(follow_redirects=False, timeout=60.0)
     try:
         upstream = await client.send(
             client.build_request("GET", url),
