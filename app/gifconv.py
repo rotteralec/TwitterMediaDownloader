@@ -50,9 +50,9 @@ async def _run(cmd: list[str], timeout: float) -> None:
             "GIF conversion took too long and was stopped.", code="gif_timeout"
         ) from e
     if proc.returncode != 0:
-        detail = (stderr or b"").decode("utf-8", "replace").strip().splitlines()
-        tail = detail[-1] if detail else "unknown error"
-        raise GifConvError(f"Couldn't convert this clip to a GIF ({tail}).")
+        detail = (stderr or b"").decode("utf-8", "replace").strip()
+        print(f"[gifconv] ffmpeg failed: {detail[-500:]}", flush=True)  # server log only
+        raise GifConvError("Couldn't convert this clip to a GIF.")
 
 
 async def mp4_to_gif(
