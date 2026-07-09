@@ -328,6 +328,16 @@ async def api_download(
             status_code=502,
             content={"error": "upstream", "message": f"CDN returned {upstream.status_code}."},
         )
+    
+    max_mb = int(os.environ.get("MP4_MAX_MB", "512"))
+    declared = upstream.headers.get("content-length")
+    if declared and declared.isdigit() and int(declared) > max_mb * 1024 * 1024:
+        await upstream.aclose()
+        await client.aclose()
+        return JSONResponse(
+            status_code=413,
+            content={"error": "too_large", "message": f"That video is over {max_mb} MB."},
+        )
 
     async def streamer():
         try:
