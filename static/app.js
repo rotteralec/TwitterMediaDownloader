@@ -47,6 +47,36 @@
     }
   }
 
+  function canShareFiles() {
+    if (!navigator.canShare) return false;
+    try {
+      return navigator.canShare({ files: [new File(["x"], "probe.gif", { type: "image/"})]})
+    } catch { return false; }
+  }
+  const CAN_SHARE = canShareFiles();
+
+async function shareMedia(downloadUrl, filename, mimeType, btn) {
+  if (btn && btn.classList.contains("busy")) return;
+  const lbl = btn && btn.querySelector(".lbl");
+  const prev = lbl && lbl.textContent;
+  if (btn) { btn.classList.add("busy"); if (lbl) lbl.textContent = "Preparing…"; }
+  try {
+    const res = await fetch(downloadUrl);
+    if (!res.ok) throw new Error(`fetch ${res.status}`);
+    const blob = await res.blob();
+    const file = new File([blob], filename, { type: mimeType || blob.type });
+    if (navigator.canShare && !navigator.canShare({ files: [file] })) {
+      throw new Error("unshareable");
+    }
+    await navigator.share({ files: [file] });
+  } catch (err) {
+    if (err && err.name === "AbortError") return;   // user dismissed the share sheet
+    setError("Couldn't share that — you can still download it.");
+  } finally {
+    if (btn) { btn.classList.remove("busy"); if (lbl) lbl.textContent = prev; }
+  }
+}
+
   // --- Paste --------------------------------------------------------------
   pasteBtn.addEventListener("click", async () => {
     try {
@@ -193,46 +223,69 @@
   }
 
   function renderVideo(container, item, baseTitle) {
-    (item.formats || []).forEach((f) => {
-      const a = document.createElement("a");
-      a.className = "q-btn";
-      a.href = buildDownloadUrl(f.url, `${baseTitle}_${f.quality}`, "mp4");
-      a.rel = "noopener";
-      // No target=_blank — we want the download to start in the same tab.
-      a.innerHTML = `${escapeHtml(f.quality)}` +
-        (f.filesize_human ? ` <span class="sz">${escapeHtml(f.filesize_human)}</span>` : "");
-      container.appendChild(a);
+  (item.formats || []).forEach((f) => {
+    const a = document.createElement("a");
+    a.className = "q-btn";
+    a.href = buildDownloadUrl(f.url, `${baseTitle}_${f.quality}`, "mp4");
+    a.rel = "noopener";
+    a.innerHTML = `${escapeHtml(f.quality)}` +
+      (f.filesize_human ? ` <span class="sz">${escapeHtml(f.filesize_human)}</span>` : "");
+    container.appendChild(a);
+  });
+
+  if (CAN_SHARE && item.formats && item.formats.length) {
+    const best = item.formats[0];   // formats are sorted highest-quality first
+    const url = buildDownloadUrl(best.url, `${baseTitle}_${best.quality}`, "mp4");
+    const share = document.createElement("button");
+    share.type = "button";
+    share.className = "q-btn share-btn";
+    share.innerHTML = `<span class="lbl">Share</span>`;
+    share.addEventListener("click", () => {
+      shareMedia(url, sanitize(baseTitle) + ".mp4", "video/mp4", share);
     });
+    container.appendChild(share);
   }
+}
 
   function renderGif(container, item, baseTitle) {
-    const src = item.source || {};
-    const a = document.createElement("a");
-    a.className = "q-btn gif-btn";
-    a.href = buildDownloadUrl(src.url, baseTitle, "gif");
-    a.rel = "noopener";
-    a.innerHTML = `<span class="lbl">Download GIF</span>`;
-    container.appendChild(a);
+  const src = item.source || {};
+  const dlUrl = buildDownloadUrl(src.url, baseTitle, "gif");
 
-    const note = document.createElement("p");
-    note.className = "gif-note";
-    note.textContent = "Converted to a real .gif on the fly — may take a few seconds.";
-    container.appendChild(note);
+  const a = document.createElement("a");
+  a.className = "q-btn gif-btn";
+  a.href = dlUrl;
+  a.rel = "noopener";
+  a.innerHTML = `<span class="lbl">Download GIF</span>`;
+  container.appendChild(a);
 
-    // Light feedback + guard against rapid double-taps firing extra conversions.
-    // We don't preventDefault: the browser still performs the attachment download.
-    a.addEventListener("click", () => {
-      if (a.classList.contains("busy")) return;
-      a.classList.add("busy");
-      const lbl = a.querySelector(".lbl");
-      const prev = lbl.textContent;
-      lbl.textContent = "Converting…";
-      setTimeout(() => {
-        a.classList.remove("busy");
-        lbl.textContent = prev;
-      }, 10000);
+  if (CAN_SHARE) {
+    const share = document.createElement("button");
+    share.type = "button";
+    share.className = "q-btn gif-btn share-btn";
+    share.innerHTML = `<span class="lbl">Share GIF</span>`;
+    share.addEventListener("click", () => {
+      shareMedia(dlUrl, sanitize(baseTitle) + ".gif", "image/gif", share);
     });
+    container.appendChild(share);
   }
+
+  const note = document.createElement("p");
+  note.className = "gif-note";
+  note.textContent = "Converted to a real .gif on the fly — may take a few seconds.";
+  container.appendChild(note);
+
+  a.addEventListener("click", () => {
+    if (a.classList.contains("busy")) return;
+    a.classList.add("busy");
+    const lbl = a.querySelector(".lbl");
+    const prev = lbl.textContent;
+    lbl.textContent = "Converting…";
+    setTimeout(() => {
+      a.classList.remove("busy");
+      lbl.textContent = prev;
+    }, 10000);
+  });
+}
 
   function buildDownloadUrl(cdnUrl, filenameBase, fmt) {
     const params = new URLSearchParams({
