@@ -263,6 +263,7 @@ async def _download_as_gif(url: str, filename: Optional[str]):
     # 3) Stream the finished GIF, cleaning up the temp dir when done.
     gif_size = os.path.getsize(gif_path)
 
+
     async def streamer():
         try:
             with open(gif_path, "rb") as fp:
@@ -347,9 +348,18 @@ async def api_download(
             content={"error": "too_large", "message": f"That video is over {max_mb} MB."},
         )
 
+
+    max_bytes = max_mb * 1024 * 1024   # max_mb already defined just above
     async def streamer():
+        total = 0
         try:
             async for chunk in upstream.aiter_bytes(64 * 1024):
+                total += len(chunk)
+                if total > max_bytes:
+                    # Passthrough already started (200 + headers sent), so we can't
+                    # return a clean 413 here — just stop to cap server egress.
+                    # Client sees a truncated download in this edge case.
+                    break
                 yield chunk
         finally:
             await upstream.aclose()
