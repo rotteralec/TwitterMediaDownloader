@@ -75,7 +75,6 @@ limiter = RateLimiter(DAILY_LIMIT)
 ROOT = Path(__file__).resolve().parent.parent
 STATIC_DIR = ROOT / "static"
 
-
 def _strip_port(host: str) -> str:
     """Return just the IP from an X-Forwarded-For element that may carry a port.
     Handles 'a.b.c.d:port', bracketed IPv6 '[::1]:port', and bare IPs."""
